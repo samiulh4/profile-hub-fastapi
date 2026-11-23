@@ -7,3 +7,16 @@ DATABASE_URL = (
     f"{settings.DB_USERNAME}:{settings.DB_PASSWORD}"
     f"@{settings.DB_HOST}:{settings.DB_PORT}/{settings.DB_DATABASE}"
 )
+
+engine = create_engine(DATABASE_URL, pool_per_ping=True)
+
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+Base = declarative_base()
+
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()    
