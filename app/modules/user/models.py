@@ -38,12 +38,13 @@ class User(Base):
     user_email = Column(String(255), nullable=False)
     user_mobile = Column(String(30), nullable=False)
     user_type = Column(String(10), server_default="USER", nullable=False) # join with users_type table by type_name
+    user_password = Column(String(255), nullable=False)
     user_full_name = Column(String(255), nullable=False)
     user_gender = Column(Enum(GenderEnum), nullable=False) # join with users_gender table by gender_name
-    user_birthday = Column(Date, nullable=True)
-    user_birth_certificate = Column(String(50), nullable=False)
-    user_national_identity = Column(String(50), nullable=False)
-    user_passport = Column(String(50), nullable=False)
+    user_birthday = Column(Date, nullable=False)
+    user_birth_certificate = Column(String(50), nullable=True)
+    user_national_identity = Column(String(50), nullable=True)
+    user_passport = Column(String(50), nullable=True)
     user_photo_id = Column(Integer, nullable=True)
     user_signature_id = Column(Integer, nullable=True)
     user_status = Column(Boolean, nullable=False, default=0, server_default=false())
