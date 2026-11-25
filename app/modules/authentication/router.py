@@ -14,9 +14,21 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 
-def _error_response(status_code: int, message: str) -> JSONResponse:
+def _error_response(db: Session, e: Exception) -> JSONResponse:
+    """One place to turn any exception into the standard error response."""
+    if isinstance(e, ValueError):
+        code, message = status.HTTP_409_CONFLICT, str(e)
+    else:
+        db.rollback()
+        logger.exception("Request failed")
+        if isinstance(e, IntegrityError):
+            code, message = status.HTTP_409_CONFLICT, "User already exists or required data is missing."
+        elif isinstance(e, SQLAlchemyError):
+            code, message = status.HTTP_500_INTERNAL_SERVER_ERROR, "A database error occurred. Please try again later."
+        else:
+            code, message = status.HTTP_500_INTERNAL_SERVER_ERROR, "An unexpected error occurred. Please try again later."
     return JSONResponse(
-        status_code=status_code,
+        status_code=code,
         content={"success": False, "message": message, "data": {}},
     )
 
@@ -33,26 +45,5 @@ async def sign_up(signup_request: SignUpRequest, db: Session = Depends(get_db)):
                 "data": {},
             },
         )
-    except ValueError as e:
-        return _error_response(status.HTTP_409_CONFLICT, str(e))
-    except IntegrityError:
-        db.rollback()
-        logger.exception("Sign-up integrity error")
-        return _error_response(
-            status.HTTP_409_CONFLICT,
-            "User already exists or required data is missing.",
-        )
-    except SQLAlchemyError:
-        db.rollback()
-        logger.exception("Sign-up database error")
-        return _error_response(
-            status.HTTP_500_INTERNAL_SERVER_ERROR,
-            "A database error occurred. Please try again later.",
-        )
-    except Exception:
-        db.rollback()
-        logger.exception("Sign-up unexpected error")
-        return _error_response(
-            status.HTTP_500_INTERNAL_SERVER_ERROR,
-            "An unexpected error occurred. Please try again later.",
-        )
+    except Exception as e:
+        return _error_response(db, e)
